@@ -1,0 +1,16 @@
+[project]
+name = "mirror"
+version = "0.0.1"
+description = "Introspection lab: do small transformers' self-reports read their internal state?"
+requires-python = ">=3.11"
+dependencies = ["torch>=2.3"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.setuptools]
+packages = ["mirror"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
