@@ -30,14 +30,24 @@ TOML keys: experiment (module), out, seeds, [params] fixed values and [grid] Car
 
 ## Steps
 
-- [ ] Write tests in tests/test_sweep.py and fast tests/sweep_fixture.py. Literal Cartesian expectations, subprocess CLI, mtime resume, tampered hash rejection, isolated raise and killed atomic writer establish behavior.
-- [ ] Run `py -3.13 -m pytest tests/test_sweep.py -q` and observe missing-runner failures.
-- [ ] Implement mirror/sweep.py: expand_jobs(config, threads_per_job), atomic_write(path, data), run_sweep(config, workers, threads_per_job, dry_run), main(). Use spawn ProcessPoolExecutor, metadata provenance, resume preflight and progress.
-- [ ] Run tests; add adapter mapping test that fails for missing run_job before implementation.
-- [ ] Add only run_job to experiments/exp0_correctness.py, mapping defaults to TrainConfig and rejecting unknown keys. Add sweeps/exp0.toml seeds 0 through 19, default grid and output outside results/. Document CLI and schema in README.
-- [ ] Full pytest, dry-run, real two-thread seeds 0 and 1, direct normalized JSON comparisons, resume. Record actual outputs and inspect protected paths unchanged.
-- [ ] Review full task diff, resolve defects, rerun affected checks. Commit, push and create PR against claude/exp0 if #1 is open, otherwise main; attach PR and return evidence to coordinator.
+- [x] Write tests in tests/test_sweep.py and fast tests/sweep_fixture.py. Literal Cartesian expectations, subprocess CLI, mtime resume, tampered hash rejection, isolated raise and killed atomic writer establish behavior.
+- [x] Run `py -3.13 -m pytest tests/test_sweep.py -q` and observe missing-runner failures.
+- [x] Implement mirror/sweep.py: expand_jobs(config, threads_per_job), atomic_write(path, data), run_sweep(config, workers, threads_per_job, dry_run), main(). Use spawn ProcessPoolExecutor, metadata provenance, resume preflight and progress.
+- [x] Run tests; add adapter mapping test that fails for missing run_job before implementation.
+- [x] Add only run_job to experiments/exp0_correctness.py, mapping defaults to TrainConfig and rejecting unknown keys. Add sweeps/exp0.toml seeds 0 through 19, default grid and output outside results/. Document CLI and schema in README.
+- [x] Full pytest, dry-run, real two-thread seeds 0 and 1, direct normalized JSON comparisons, resume. Record actual outputs and inspect protected paths unchanged.
+- [x] Review full task diff, resolve defects, rerun affected checks. Commit, push and create PR against claude/exp0 if #1 is open, otherwise main; attach PR and return evidence to coordinator.
 
 ## Review record
 
 Import/cache ordering family: confirmed independent-review finding that seeding before experiment import shifts the first job when an import consumes RNG. The fast fixture now consumes both Python and torch RNG at import. Fresh versus reused workers with reversed scheduling reproduced unequal samples before the fix. The common job boundary now imports after thread initialization and reseeds immediately before run_job. Resume skips do not execute the worker; retry/fresh-worker jobs pass through the same reseeding boundary. Exp0 train already seeds before model construction and sampling, so this generic runner fix does not change the scientific algorithm.
+
+## Returned evidence
+
+Implementation revision: 08b0f8d2e71498db8bd2acdd38744464630fd3cd. Independent review accepted the import-order repair. Normal `py -3.13 -m pytest -q`: 18 passed in 47.43 s (also 18 passed with unrelated global plugins disabled). Sample dry-run: 20 jobs; 0 done; 20 pending.
+
+Full default exp0 jobs at workers=2, threads-per-job=2 finished: seed 1 wall 917.088 s, seed 0 wall 1120.157 s, failed=0. Independent direct run_seed calls with the same thread count finished: seed 0 wall 1040.172 s, seed 1 wall 914.715 s. After JSON normalization, both sweep payloads equal their direct payloads in all fields excluding meta. Repeating the exact two-job command reports skipped 2; pending 0; both file digests and modification times remain unchanged.
+
+The handoff's approximate 2.5-minute runtime did not hold on this local Windows/PyTorch installation. No experiment defaults were reduced. K=1, invocation-relative paths and thread-aware hashes resolve unspecified configuration details, as documented in README. Scientific files, run_seed, pre-registration, results and dependency manifest are unchanged. No VM execution, new experiment, science adjustment or merge was performed.
+
+PR: https://github.com/Joshua-Asante/Mirror/pull/3 (base claude/exp0 while PR #1 is open). Return this bounded implementation/evidence to Claude coordinator for combined acceptance. Full commands and actual outputs are in the PR description. Local acceptance artifacts remain ignored under .validation/.
