@@ -27,7 +27,7 @@ one that only learned which inputs are hard cannot.
 
 | ID | Question | Status |
 |---|---|---|
-| exp0 | Can a report be calibrated on clean data yet blind to the model's actual state? | [done](results/exp0/RESULTS.md): yes. Even a probe on the final residual is |
+| exp0 | Can a report be calibrated on clean data yet blind to the model's actual state? | [done](results/exp0/RESULTS.md), revised after [independent review](https://github.com/Joshua-Asante/Mirror/pull/1#issuecomment-6224001382) |
 
 ## Running
 

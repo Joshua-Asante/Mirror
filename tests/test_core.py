@@ -52,3 +52,19 @@ def test_sensitivity_one_for_tracking_report():
         torch.tensor([0.9, 0.1]), clean, torch.tensor([0.2, 0.7]), after
     )
     assert frac == 1.0
+
+
+def test_directional_sensitivity_null_for_always_decreasing_report():
+    clean = torch.tensor([True, True, True, False])
+    after = torch.tensor([False, False, False, True])
+    s0 = torch.full((4,), 0.8)
+    d = metrics.directional_sensitivity(s0, clean, s0 - 0.1, after)
+    assert d["down"] == 1.0 and d["up"] == 0.0 and d["balanced"] == 0.5
+    assert d["n_down"] == 3 and d["n_up"] == 1
+
+
+def test_spearman():
+    x = torch.arange(10.0)
+    assert abs(metrics.spearman(x, x ** 3) - 1.0) < 1e-12
+    assert abs(metrics.spearman(x, -x) + 1.0) < 1e-12
+    assert metrics.spearman(torch.zeros(10), x) == 0.0

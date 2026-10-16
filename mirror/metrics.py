@@ -54,3 +54,38 @@ def within_input_sensitivity(
     want = int_correct[flip].float() - clean_correct[flip].float()
     got = torch.sign(int_score[flip] - clean_score[flip])
     return (got == want).float().mean().item(), n
+
+
+def directional_sensitivity(
+    clean_score: torch.Tensor,
+    clean_correct: torch.Tensor,
+    int_score: torch.Tensor,
+    int_correct: torch.Tensor,
+) -> dict:
+    """Sensitivity split by flip direction (post-hoc, added after review).
+
+    `down`: fraction of correct->wrong flips where the report strictly falls.
+    `up`: fraction of wrong->correct flips where the report strictly rises.
+    `balanced`: their mean. A report that always falls under intervention scores 0.5,
+    as does one perturbed symmetrically at random; an unchanged report scores 0.
+    """
+    delta = int_score - clean_score
+    to_wrong = clean_correct & ~int_correct
+    to_right = ~clean_correct & int_correct
+    down = (delta[to_wrong] < 0).float().mean().item() if to_wrong.any() else float("nan")
+    up = (delta[to_right] > 0).float().mean().item() if to_right.any() else float("nan")
+    return {
+        "down": down,
+        "up": up,
+        "balanced": (down + up) / 2,
+        "n_down": int(to_wrong.sum()),
+        "n_up": int(to_right.sum()),
+    }
+
+
+def spearman(x: torch.Tensor, y: torch.Tensor) -> float:
+    """Rank correlation; 0.0 when either input is constant (e.g. an input-only report)."""
+    rx, ry = _average_ranks(x.double()), _average_ranks(y.double())
+    rx, ry = rx - rx.mean(), ry - ry.mean()
+    denom = (rx.pow(2).sum() * ry.pow(2).sum()).sqrt()
+    return 0.0 if denom == 0 else (rx * ry).sum().div(denom).item()
