@@ -77,6 +77,15 @@ def run_seed(seed: int, n_fit: int, n_eval: int, train_cfg: TrainConfig) -> dict
     return result
 
 
+def run_job(params: dict, seed: int) -> dict:
+    """Sweep adapter; keep all experiment logic in run_seed."""
+    unknown = params.keys() - {"n_fit", "n_eval", "target_acc"}
+    if unknown:
+        raise ValueError(f"unknown exp0 parameters: {sorted(unknown)}")
+    return run_seed(seed, params.get("n_fit", 20_000), params.get("n_eval", 10_000),
+                    TrainConfig(target_acc=params.get("target_acc", 0.75)))
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--seeds", type=int, nargs="+", default=[0])

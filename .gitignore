@@ -1,3 +1,6 @@
 __pycache__/
 *.egg-info/
 .venv/
+
+# Generated sweep outputs (published experiment results remain under results/).
+sweep-output/

@@ -37,3 +37,47 @@ pytest
 python -m experiments.exp0_correctness --seeds 0 1 2 --out results/exp0
 python -m experiments.summarize_exp0 results/exp0
 ```
+
+## Sweeps
+
+Run one seed/config per spawned process, with atomic JSON results and automatic resume:
+
+```sh
+python -m mirror.sweep sweeps/exp0.toml --dry-run
+python -m mirror.sweep sweeps/exp0.toml --workers 16 --threads-per-job 2
+```
+
+The sample expands to 20 jobs (seeds 0-19, including the original seeds 0-2),
+using the existing exp0 defaults. It writes to `sweep-output/exp0`, leaving the
+committed `results/` untouched. Each experiment module must provide
+`run_job(params: dict, seed: int) -> dict`; `meta` is reserved for the runner.
+
+A sweep TOML contains `experiment` (module path), `out` (directory), `seeds`
+(integer array), optional `[params]` for fixed parameters, and optional `[grid]`
+for arrays whose Cartesian product is run for every seed. Fixed and grid keys
+must be disjoint. Paths are relative to the working directory of the command.
+`--threads-per-job` defaults to 1. `--workers` defaults to CPU count divided by
+threads per job, with a minimum of 1. Keep workers times threads within your
+machine's CPU/memory budget.
+
+Each filename contains readable parameters, the seed and a short identity hash.
+The full `meta.params_hash` includes the experiment module, parameters, seed and
+thread count. Matching complete results are skipped; malformed or conflicting
+results abort the whole sweep before starting jobs. Different parameters get
+different filenames. A thread-count change conflicts at the same filename: use
+a separate output directory to intentionally run with another thread count.
+`--dry-run` lists done/pending without importing the experiment or writing files.
+
+Failed jobs write `.error.json` with traceback and parameters; other jobs continue,
+and the command exits nonzero if any job failed. Re-running retries failures.
+A killed process can leave hidden `.tmp` files; these are never treated as results.
+Use one sweep invocation per output directory at a time. The runner does not
+coordinate multiple simultaneous invocations targeting the same directory.
+
+Metadata records parameters, seed, hash, Git SHA/dirty status, torch/Python
+versions, thread count, hostname and UTC timing. Git fields are null if Git
+provenance is unavailable (for example, an installed copy without a checkout).
+Resume intentionally does not invalidate results for Git or library-version
+changes: use a new output directory when intentionally comparing code versions.
+For fixed code/environment and threads, each worker seeds Python and torch for
+each job; equality across different thread counts is not promised.
