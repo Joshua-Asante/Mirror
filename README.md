@@ -27,4 +27,13 @@ one that only learned which inputs are hard cannot.
 
 | ID | Question | Status |
 |---|---|---|
-| exp0 | Can a report be calibrated on clean data yet blind to the model's actual state? | [pre-registered](PREREG_exp0.md) |
+| exp0 | Can a report be calibrated on clean data yet blind to the model's actual state? | [done](results/exp0/RESULTS.md), revised after [independent review](https://github.com/Joshua-Asante/Mirror/pull/1#issuecomment-6224001382) |
+
+## Running
+
+```
+pip install -e '.[dev]'
+pytest
+python -m experiments.exp0_correctness --seeds 0 1 2 --out results/exp0
+python -m experiments.summarize_exp0 results/exp0
+```
